@@ -1038,30 +1038,30 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
 
       {
         copilotUIState === 'overlay' && (
-          <div className="fixed bottom-6 right-24 z-50 w-[380px] glass-card border border-neonBlue/40 flex flex-col h-[525px] overflow-hidden bg-[#090b12]/95 shadow-2xl">
-            <div className="px-4 py-3 border-b border-[#1b223c] bg-[#0e111d] flex justify-between items-center text-white">
+          <div className="fixed bottom-6 right-24 z-50 w-[380px] border border-teal-500/40 flex flex-col h-[525px] overflow-hidden bg-teal-950 shadow-2xl">
+            <div className="px-4 py-3 border-b border-teal-800 bg-teal-900 flex justify-between items-center text-white">
               <div className="flex items-center gap-1.5">
-                <MessageSquare className="h-4 w-4 text-neonCyan" />
+                <MessageSquare className="h-4 w-4 text-teal-300" />
                 <span className="font-bold text-sm tracking-wider">Staff Copilot</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setCopilotUIState('minimized')}
-                  className="text-darkMuted hover:text-white transition p-1"
+                  className="text-teal-400 hover:text-white transition p-1"
                   title="Minimize"
                 >
                   <Minus className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => setCopilotUIState('fullscreen')}
-                  className="text-darkMuted hover:text-white transition p-1"
+                  className="text-teal-400 hover:text-white transition p-1"
                   title="Full-Screen"
                 >
                   <Maximize2 className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => setCopilotUIState('minimized')}
-                  className="text-darkMuted hover:text-red-500 transition p-1"
+                  className="text-teal-400 hover:text-red-400 transition p-1"
                   title="Close"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -1074,9 +1074,9 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                 <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] rounded p-2.5 text-xs leading-relaxed ${msg.sender === 'user'
                     ? 'bg-[#1b223c] text-white rounded-br-none border border-[#2b355d]'
-                    : 'bg-[#101423] text-teal-300 rounded-bl-none border border-[#151c35]'
+                    : 'bg-teal-900/60 text-teal-100 rounded-bl-none border border-teal-700/50'
                     }`}>
-                    <p className="font-semibold text-[8px] uppercase tracking-wider text-neonCyan mb-1 font-mono">
+                    <p className="font-semibold text-[8px] uppercase tracking-wider text-teal-300 mb-1 font-mono">
                       {msg.sender === 'user' ? 'Operator' : 'AI Copilot'}
                     </p>
                     <p className="whitespace-pre-line font-mono text-[11px]">{msg.text}</p>
@@ -1094,19 +1094,19 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
               <div ref={chatBottomRef} />
             </div>
 
-            <form onSubmit={sendChatMessage} className="p-3 border-t border-[#1b223c] bg-[#0c0e18] flex gap-1.5">
+            <form onSubmit={sendChatMessage} className="p-3 border-t border-teal-800 bg-[#073633] flex gap-1.5">
               <input
                 type="text"
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 placeholder="Ask: 'Which gate is under stress?'"
                 disabled={chatLoading}
-                className="flex-1 bg-[#050609] border border-[#1b223c] rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-[#45f3ff]"
+                className="flex-1 bg-[#050609] border border-teal-800 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500"
               />
               <button
                 type="submit"
                 disabled={chatLoading}
-                className="bg-[#45f3ff]/10 hover:bg-[#45f3ff]/20 text-[#66fcf1] border border-[#45f3ff]/40 p-2 rounded transition"
+                className="bg-teal-800/40 hover:bg-teal-700/50 text-teal-300 border border-teal-600/60 p-2 rounded transition"
               >
                 <Send className="h-4.5 w-4.5" />
               </button>

@@ -31,6 +31,13 @@ export function verifyIncidentRecommendation(playbookKey, llmOutput) {
   normalizedKey = normalizedKey.replace(/\s*:\s*/g, ' ');
   normalizedKey = normalizedKey.replace(/[\s_]+/g, '_');
 
+  // Remap food court short layouts directly
+  if (normalizedKey.includes('FOOD_COURT_ZONE_B') && !normalizedKey.includes('OVERFLOW')) {
+    normalizedKey = 'FOOD_COURT_OVERFLOW_ZONE_B';
+  } else if (normalizedKey.includes('FOOD_COURT_ZONE_A') && !normalizedKey.includes('OVERFLOW')) {
+    normalizedKey = 'FOOD_COURT_OVERFLOW_ZONE_A';
+  }
+
   // 2. If not a direct match, parse and reconstruct <TYPE>_<LOCATION>
   if (!playbooks[normalizedKey]) {
     const knownTypes = [
@@ -63,6 +70,10 @@ export function verifyIncidentRecommendation(playbookKey, llmOutput) {
     if (!foundType) {
       if (normalizedKey.includes('MEDICAL')) foundType = 'MEDICAL_EMERGENCY';
       else if (normalizedKey.includes('WEATHER')) foundType = 'WEATHER_ALERT';
+      else if (normalizedKey.includes('FOOD_COURT')) foundType = 'FOOD_COURT_OVERFLOW';
+      else if (normalizedKey.includes('GATE')) foundType = 'GATE_OVERFLOW';
+      else if (normalizedKey.includes('WASHROOM')) foundType = 'WASHROOM_CONGESTION';
+      else if (normalizedKey.includes('WATER')) foundType = 'WATER_SHORTAGE';
     }
 
     let foundLocation = knownLocations.find(loc => {

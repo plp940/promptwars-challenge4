@@ -71,6 +71,18 @@
         "evacuation_route": "External Plaza Gates 4-6",
         "dispatch_squad": "Steward Team Foxtrot"
     },
+    "FOOD_COURT_OVERFLOW_ZONE_A": {
+        "primary_response_facility": "Crowd Control Command",
+        "room_number": "Concourse Sector A Queue Lanes",
+        "evacuation_route": "External Plaza Gates 1-3",
+        "dispatch_squad": "Steward Team Echo"
+    },
+    "FOOD_COURT_OVERFLOW_ZONE_B": {
+        "primary_response_facility": "Crowd Control Command",
+        "room_number": "Concourse Sector B Queue Lanes",
+        "evacuation_route": "External Plaza Gates 4-6",
+        "dispatch_squad": "Steward Team Foxtrot"
+    },
     "WEATHER_ALERT_SECTOR_ALL": {
         "primary_response_facility": "Stadium Command Center",
         "room_number": "Emergency Command Room",
