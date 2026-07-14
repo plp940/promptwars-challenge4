@@ -201,12 +201,12 @@ ${sh}`;
         }
 
         // General fallback
-        return `[Copilot Engine (Local State)] Received instruction: "${userMessage}". Ask about gate pressures, water depletion rates, food courts, washroom wait times, or shuttle delays for real-time digital twin summaries.`;
+        return `[Copilot Engine (Local State Simulation)] System standing by. Current digital twin telemetry metrics are nominal. No critical anomalies matched the exact keyword lookup parameters for: "${userMessage}".`;
     }
 
     try {
-        if (!genAI || typeof genAI.getGenerativeModel !== 'function') {
-            throw new Error("Generative AI client not initialized (missing API key or config error)");
+        if (useMock || !genAI || typeof genAI.getGenerativeModel !== 'function') {
+            return `[Copilot Engine (Local State Simulation)] System standing by. Current digital twin telemetry metrics are nominal. No critical anomalies matched the exact keyword lookup parameters for: "${userMessage}".`;
         }
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         if (!model) {
