@@ -21,6 +21,112 @@ if (apiKey && apiKey !== 'YOUR_API_KEY_HERE') {
 }
 
 /**
+ * Standardized local mock playbook responder
+ */
+export function getMockIncidentResolution(playbookKey) {
+    const key = (playbookKey || '').trim().toUpperCase();
+    if (key === 'MEDICAL_SECTOR_102' || key === 'MEDICAL_EMERGENCY_SECTOR_102') {
+        return `Medical emergency logged at Sector 102. Action Plan: Dispatch Medics Team 3 immediately. Move the patient to Medical Station Echo (Room 2B-Level 1) using the evacuation route via Tunnel Exit 4 to Concourse Corridor South. Field volunteers must clear this path.`;
+    } else if (key === 'GATE_A_OVERFLOW' || key === 'GATE_OVERFLOW_GATE_A') {
+        return `Gate overflow detected at Gate A. Action Plan: Deploy Crowd Control Squad Alpha to Concourse Command A (Gate Control Cabin A) via Ramp 1 North to Main Plaza. Open supplemental gates to relieve crowd tension.`;
+    } else if (key === 'WATER_SHORTAGE_SECTOR_310') {
+        return `Water shortage reported at Sector 310 concession. Action Plan: Deploy Logistics Support Unit 1 to Logistics Hub North (Supply Depot 3A). The evacuation route via Service Lift Delta to Third Tier Concourse should be secured.`;
+    } else if (key === 'FOOD_COURT_OVERFLOW_ZONE_A' || key === 'FOOD_COURT_OVERFLOW_FOOD_COURT_ZONE_A') {
+        return `Food court congestion detected at Food Court Zone A. Action Plan: Deploy Steward Team Bravo to Crowd Control Command (Concourse Sector A Queue Lanes). Use evacuation route External Plaza Gates 1-3 to divert flow.`;
+    } else {
+        return `Emergency alert initiated for ${playbookKey}. Dispatch standard containment crew and report to command office.`;
+    }
+}
+
+/**
+ * Staff Copilot local state keyword parser
+ */
+export function runLocalStateChatParser(userMessage, currentTelemetry) {
+    const question = userMessage.toLowerCase();
+
+    // 1. Water depleting soon
+    if (question.includes("water") || question.includes("stall") || question.includes("20 mins")) {
+        const lowStalls = currentTelemetry.concessions.map(c => {
+            const timeToDeplete = c.depletion_rate > 0 ? (c.current_volume / c.depletion_rate) : Infinity;
+            return { ...c, timeToDeplete };
+        }).filter(c => c.timeToDeplete <= 20);
+
+        if (lowStalls.length > 0) {
+            return `[Copilot Engine (Local State)] Alert: The following concessions will deplete water in the next 20 minutes:\n- ${lowStalls.map(s => `${s.stall_id} (${s.current_volume}L left, depleting at ${s.depletion_rate}L/min. Depletes in ${Math.round(s.timeToDeplete)} mins)`).join('\n- ')}\nRefill teams should be dispatched immediately.`;
+        }
+        return `[Copilot Engine (Local State)] All concession stalls have sufficient water supply. No stalls are projected to deplete within 20 minutes.`;
+    }
+
+    // 2. Gates under stress
+    if (question.includes("gate") || question.includes("stress") || question.includes("congest")) {
+        const stressedGates = currentTelemetry.gates.filter(g => g.crowd_density > 4.0 || g.status === 'CRITICAL' || g.status === 'CONGESTED');
+        if (stressedGates.length > 0) {
+            return `[Copilot Engine (Local State)] Currently, ${stressedGates.length} gate(s) are experiencing high pressure:\n- ${stressedGates.map(g => `${g.zone_id}: Density at ${g.crowd_density} people/sqm, throughputting ${g.throughput_rate} people/min. Status is ${g.status}.`).join('\n- ')}\nRecommend re-routing incoming fans.`;
+        }
+        return `[Copilot Engine (Local State)] All gate turnstiles are operating within safe bounds (crowd density values are under 4.0 people/sqm).`;
+    }
+
+    // 3. Washrooms/Restrooms status query
+    if (question.includes("washroom") || question.includes("restroom") || question.includes("toilet") || question.includes("bath") || question.includes("paper")) {
+        if (currentTelemetry.washrooms) {
+            const details = currentTelemetry.washrooms.map(w =>
+                `- ${w.zone_id}: Occupancy: ${w.occupancy}%, Q-Wait: ${w.queue_length} mins, Supplies: ${w.supply_status}, Security Alert: ${w.security_incident_flag ? '⚠️ YES' : 'NOMINAL'}`
+            ).join('\n');
+            return `[Copilot Engine (Local State)] Restroom Telemetry Summary:\n${details}`;
+        }
+        return `[Copilot Engine (Local State)] Restroom telemetry is not configured on this twin yet.`;
+    }
+
+    // 4. Food Court query
+    if (question.includes("food") || question.includes("court") || question.includes("hungry") || question.includes("eat")) {
+        if (currentTelemetry.foodCourts) {
+            const details = currentTelemetry.foodCourts.map(f =>
+                `- ${f.zone_id}: Crowd Density: ${f.crowd_density.toFixed(1)}/sqm, Refill Status: ${f.refill_status}`
+            ).join('\n');
+            return `[Copilot Engine (Local State)] Food Court Telemetry Summary:\n${details}`;
+        }
+        return `[Copilot Engine (Local State)] Food court telemetry is not configured on this twin yet.`;
+    }
+
+    // 5. Shuttle / Transits / Logistics query
+    if (question.includes("shuttle") || question.includes("bus") || question.includes("transit") || question.includes("logistics")) {
+        if (currentTelemetry.logistics) {
+            const log = currentTelemetry.logistics;
+            const sh = log.shuttles.map(s => `- ${s.id}: ${s.status} (${s.route})`).join('\n');
+            return `[Copilot Engine (Local State)] Logistics & Transit Summary:\n- Vol. Ratio: ${Math.round(log.volunteer_ratio * 100)}% (${log.volunteers_active}/${log.volunteers_needed} Active)\nShuttle Network:\n${sh}`;
+        }
+        return `[Copilot Engine (Local State)] Logistics telemetry is not configured on this twin yet.`;
+    }
+
+    // 6. Where are volunteers needed
+    if (question.includes("volunteer") || question.includes("people") || question.includes("staff")) {
+        const recommendations = [];
+        const criticalIncidents = currentTelemetry.incidents.filter(i => i.priority === 'CRITICAL');
+        if (criticalIncidents.length > 0) {
+            criticalIncidents.forEach(inc => {
+                recommendations.push(`Support active critical incident ${inc.incident_id} at ${inc.location_zone}`);
+            });
+        }
+        const stressedGates = currentTelemetry.gates.filter(g => g.crowd_density > 3.5);
+        if (stressedGates.length > 0) {
+            stressedGates.forEach(g => {
+                recommendations.push(`Crowd routing backup at ${g.zone_id} (Density: ${g.crowd_density}/sqm)`);
+            });
+        }
+        if (currentTelemetry.logistics) {
+            recommendations.push(`Current active volunteers: ${currentTelemetry.logistics.volunteers_active}/${currentTelemetry.logistics.volunteers_needed}. Deployment: ${Math.round(currentTelemetry.logistics.volunteer_ratio * 100)}%`);
+        }
+        if (recommendations.length > 0) {
+            return `[Copilot Engine (Local State)] Volunteer Deployment Recommendations:\n1. ${recommendations.join('\n2. ')}`;
+        }
+        return `[Copilot Engine (Local State)] Crowd flow is stable. Maintain standard shifts. Volunteers are currently not urgently requested for extra zones.`;
+    }
+
+    // General fallback
+    return `[Copilot Engine (Local State Simulation)] System standing by. Current digital twin telemetry metrics are nominal. No critical anomalies matched the exact keyword lookup parameters for: "${userMessage}".`;
+}
+
+/**
  * Incident Commander Agent: Generates action recommendation.
  * Can simulate hallucination for testing guardrails, or query Gemini.
  */
@@ -46,18 +152,7 @@ Playbook Key: ${playbookKey}
 Be concise (max 3-4 sentences).`;
 
     if (useMock) {
-        // Fallback Mock output that matches the playbook (so guardrail passes)
-        if (playbookKey === 'MEDICAL_SECTOR_102') {
-            return `Medical emergency logged at Sector 102. Action Plan: Dispatch Medics Team 3 immediately. Move the patient to Medical Station Echo (Room 2B-Level 1) using the evacuation route via Tunnel Exit 4 to Concourse Corridor South. Field volunteers must clear this path.`;
-        } else if (playbookKey === 'GATE_A_OVERFLOW') {
-            return `Gate overflow detected at Gate A. Action Plan: Deploy Crowd Control Squad Alpha to Concourse Command A (Gate Control Cabin A) via Ramp 1 North to Main Plaza. Open supplemental gates to relieve crowd tension.`;
-        } else if (playbookKey === 'WATER_SHORTAGE_SECTOR_310') {
-            return `Water shortage reported at Sector 310 concession. Action Plan: Deploy Logistics Support Unit 1 to Logistics Hub North (Supply Depot 3A). The evacuation route via Service Lift Delta to Third Tier Concourse should be secured.`;
-        } else if (playbookKey === 'FOOD_COURT_OVERFLOW_ZONE_A') {
-            return `Food court congestion detected at Food Court Zone A. Action Plan: Deploy Steward Team Bravo to Crowd Control Command (Concourse Sector A Queue Lanes). Use evacuation route External Plaza Gates 1-3 to divert flow.`;
-        } else {
-            return `Emergency alert initiated for ${playbookKey}. Dispatch standard containment crew and report to command office.`;
-        }
+        return getMockIncidentResolution(playbookKey);
     }
 
     try {
@@ -78,6 +173,18 @@ Be concise (max 3-4 sentences).`;
         return result.response.text().trim();
     } catch (error) {
         console.error("Error calling Gemini API for incident resolution:", error);
+
+        // Quota check
+        const isQuotaError = error.status === 429 ||
+            (error.message && (error.message.includes("429") ||
+                error.message.toLowerCase().includes("quota exceeded") ||
+                error.message.toLowerCase().includes("rate limit")));
+
+        if (isQuotaError) {
+            console.warn(`[Quota Fallback Alert] Intercepted 429 Rate Limit. Serving playbook fallback resolution for key: ${playbookKey}`);
+            return getMockIncidentResolution(playbookKey);
+        }
+
         return `Emergency alert initiated for ${playbookKey}. Ground staff must secure the location and stand by for instructions.`;
     }
 }
@@ -111,102 +218,12 @@ Operational Assistant Guidelines:
   `;
 
     if (useMock) {
-        // Basic rules-based mock answering for common user queries if Gemini is offline
-        const question = userMessage.toLowerCase();
-
-        // 1. Water depleting soon
-        if (question.includes("water") || question.includes("stall") || question.includes("20 mins")) {
-            const lowStalls = currentTelemetry.concessions.map(c => {
-                const timeToDeplete = c.depletion_rate > 0 ? (c.current_volume / c.depletion_rate) : Infinity;
-                return { ...c, timeToDeplete };
-            }).filter(c => c.timeToDeplete <= 20);
-
-            if (lowStalls.length > 0) {
-                return `[Copilot Engine (Local State)] Alert: The following concessions will deplete water in the next 20 minutes:
-- ${lowStalls.map(s => `${s.stall_id} (${s.current_volume}L left, depleting at ${s.depletion_rate}L/min. Depletes in ${Math.round(s.timeToDeplete)} mins)`).join('\n- ')}
-Refill teams should be dispatched immediately.`;
-            }
-            return `[Copilot Engine (Local State)] All concession stalls have sufficient water supply. No stalls are projected to deplete within 20 minutes.`;
-        }
-
-        // 2. Gates under stress
-        if (question.includes("gate") || question.includes("stress") || question.includes("congest")) {
-            const stressedGates = currentTelemetry.gates.filter(g => g.crowd_density > 4.0 || g.status === 'CRITICAL' || g.status === 'CONGESTED');
-            if (stressedGates.length > 0) {
-                return `[Copilot Engine (Local State)] Currently, ${stressedGates.length} gate(s) are experiencing high pressure:
-- ${stressedGates.map(g => `${g.zone_id}: Density at ${g.crowd_density} people/sqm, throughputting ${g.throughput_rate} people/min. Status is ${g.status}.`).join('\n- ')}
-Recommend re-routing incoming fans.`;
-            }
-            return `[Copilot Engine (Local State)] All gate turnstiles are operating within safe bounds (crowd density values are under 4.0 people/sqm).`;
-        }
-
-        // 3. Washrooms/Restrooms status query
-        if (question.includes("washroom") || question.includes("restroom") || question.includes("toilet") || question.includes("bath") || question.includes("paper")) {
-            if (currentTelemetry.washrooms) {
-                const details = currentTelemetry.washrooms.map(w =>
-                    `- ${w.zone_id}: Occupancy: ${w.occupancy}%, Q-Wait: ${w.queue_length} mins, Supplies: ${w.supply_status}, Security Alert: ${w.security_incident_flag ? '⚠️ YES' : 'NOMINAL'}`
-                ).join('\n');
-                return `[Copilot Engine (Local State)] Restroom Telemetry Summary:\n${details}`;
-            }
-            return `[Copilot Engine (Local State)] Restroom telemetry is not configured on this twin yet.`;
-        }
-
-        // 4. Food Court query
-        if (question.includes("food") || question.includes("court") || question.includes("hungry") || question.includes("eat")) {
-            if (currentTelemetry.foodCourts) {
-                const details = currentTelemetry.foodCourts.map(f =>
-                    `- ${f.zone_id}: Crowd Density: ${f.crowd_density.toFixed(1)}/sqm, Refill Status: ${f.refill_status}`
-                ).join('\n');
-                return `[Copilot Engine (Local State)] Food Court Telemetry Summary:\n${details}`;
-            }
-            return `[Copilot Engine (Local State)] Food court telemetry is not configured on this twin yet.`;
-        }
-
-        // 5. Shuttle / Transits / Logistics query
-        if (question.includes("shuttle") || question.includes("bus") || question.includes("transit") || question.includes("logistics")) {
-            if (currentTelemetry.logistics) {
-                const log = currentTelemetry.logistics;
-                const sh = log.shuttles.map(s => `- ${s.id}: ${s.status} (${s.route})`).join('\n');
-                return `[Copilot Engine (Local State)] Logistics & Transit Summary:
-- Vol. Ratio: ${Math.round(log.volunteer_ratio * 100)}% (${log.volunteers_active}/${log.volunteers_needed} Active)
-Shuttle Network:
-${sh}`;
-            }
-            return `[Copilot Engine (Local State)] Logistics telemetry is not configured on this twin yet.`;
-        }
-
-        // 6. Where are volunteers needed
-        if (question.includes("volunteer") || question.includes("people") || question.includes("staff")) {
-            const recommendations = [];
-            const criticalIncidents = currentTelemetry.incidents.filter(i => i.priority === 'CRITICAL');
-            if (criticalIncidents.length > 0) {
-                criticalIncidents.forEach(inc => {
-                    recommendations.push(`Support active critical incident ${inc.incident_id} at ${inc.location_zone}`);
-                });
-            }
-            const stressedGates = currentTelemetry.gates.filter(g => g.crowd_density > 3.5);
-            if (stressedGates.length > 0) {
-                stressedGates.forEach(g => {
-                    recommendations.push(`Crowd routing backup at ${g.zone_id} (Density: ${g.crowd_density}/sqm)`);
-                });
-            }
-            if (currentTelemetry.logistics) {
-                recommendations.push(`Current active volunteers: ${currentTelemetry.logistics.volunteers_active}/${currentTelemetry.logistics.volunteers_needed}. Deployment: ${Math.round(currentTelemetry.logistics.volunteer_ratio * 100)}%`);
-            }
-            if (recommendations.length > 0) {
-                return `[Copilot Engine (Local State)] Volunteer Deployment Recommendations:
-1. ${recommendations.join('\n2. ')}`;
-            }
-            return `[Copilot Engine (Local State)] Crowd flow is stable. Maintain standard shifts. Volunteers are currently not urgently requested for extra zones.`;
-        }
-
-        // General fallback
-        return `[Copilot Engine (Local State Simulation)] System standing by. Current digital twin telemetry metrics are nominal. No critical anomalies matched the exact keyword lookup parameters for: "${userMessage}".`;
+        return runLocalStateChatParser(userMessage, currentTelemetry);
     }
 
     try {
         if (useMock || !genAI || typeof genAI.getGenerativeModel !== 'function') {
-            return `[Copilot Engine (Local State Simulation)] System standing by. Current digital twin telemetry metrics are nominal. No critical anomalies matched the exact keyword lookup parameters for: "${userMessage}".`;
+            return runLocalStateChatParser(userMessage, currentTelemetry);
         }
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         if (!model) {
@@ -242,6 +259,18 @@ ${sh}`;
         return result.response.text().trim();
     } catch (error) {
         console.error("Error executing Copilot Gemini chat session:", error);
+
+        // Quota check
+        const isQuotaError = error.status === 429 ||
+            (error.message && (error.message.includes("429") ||
+                error.message.toLowerCase().includes("quota exceeded") ||
+                error.message.toLowerCase().includes("rate limit")));
+
+        if (isQuotaError) {
+            console.warn(`[Quota Fallback Alert] Intercepted 429 Rate Limit in chat session. Serving local state parser fallback.`);
+            return runLocalStateChatParser(userMessage, currentTelemetry);
+        }
+
         return `Failed to fetch AI feedback due to server connection constraints. Current incidents: ${currentTelemetry.incidents.length} active.`;
     }
 }
