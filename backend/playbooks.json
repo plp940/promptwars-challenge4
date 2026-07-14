@@ -1,0 +1,86 @@
+{
+    "WATER_SHORTAGE_SECTOR_310": {
+        "primary_response_facility": "Logistics Hub North",
+        "room_number": "Supply Depot 3A",
+        "evacuation_route": "Service Lift Delta to Third Tier Concourse",
+        "dispatch_squad": "Logistics Support Unit 1"
+    },
+    "WATER_SHORTAGE_SECTOR_102": {
+        "primary_response_facility": "Logistics Station Alpha",
+        "room_number": "Supply Room 1C",
+        "evacuation_route": "Lower Concourse Transit Corridor",
+        "dispatch_squad": "Logistics Support Unit 2"
+    },
+    "WATER_SHORTAGE_SECTOR_205": {
+        "primary_response_facility": "Logistics Station Central",
+        "room_number": "Supply Room 2E",
+        "evacuation_route": "Mid-Level Concourse Service Path",
+        "dispatch_squad": "Logistics Support Unit 3"
+    },
+    "WASHROOM_CONGESTION_WASHROOM_SOUTH": {
+        "primary_response_facility": "Facilities Command South",
+        "room_number": "Sanitation Hub 1",
+        "evacuation_route": "South Concourse Exit Corridor",
+        "dispatch_squad": "Custodial Rapid Response 1"
+    },
+    "WASHROOM_CONGESTION_WASHROOM_EAST": {
+        "primary_response_facility": "Facilities Command East",
+        "room_number": "Sanitation Hub 2",
+        "evacuation_route": "East Concourse Exit Corridor",
+        "dispatch_squad": "Custodial Rapid Response 2"
+    },
+    "WASHROOM_CONGESTION_WASHROOM_WEST": {
+        "primary_response_facility": "Facilities Command West",
+        "room_number": "Sanitation Hub 3",
+        "evacuation_route": "West Concourse Exit Corridor",
+        "dispatch_squad": "Custodial Rapid Response 3"
+    },
+    "GATE_OVERFLOW_GATE_A": {
+        "primary_response_facility": "External Plaza A Control",
+        "room_number": "Gate A Security Suite",
+        "evacuation_route": "Outer Perimeter Exit Lane A",
+        "dispatch_squad": "Steward Team Alpha"
+    },
+    "GATE_OVERFLOW_GATE_B": {
+        "primary_response_facility": "External Plaza B Control",
+        "room_number": "Gate B Security Suite",
+        "evacuation_route": "Outer Perimeter Exit Lane B",
+        "dispatch_squad": "Steward Team Bravo"
+    },
+    "GATE_OVERFLOW_GATE_C": {
+        "primary_response_facility": "External Plaza C Control",
+        "room_number": "Gate C Security Suite",
+        "evacuation_route": "Outer Perimeter Exit Lane C",
+        "dispatch_squad": "Steward Team Charlie"
+    },
+    "GATE_OVERFLOW_GATE_D": {
+        "primary_response_facility": "External Plaza D Control",
+        "room_number": "Gate D Security Suite",
+        "evacuation_route": "Outer Perimeter Exit Lane D",
+        "dispatch_squad": "Steward Team Delta"
+    },
+    "FOOD_COURT_OVERFLOW_FOOD_COURT_ZONE_A": {
+        "primary_response_facility": "Crowd Control Command",
+        "room_number": "Concourse Sector A Queue Lanes",
+        "evacuation_route": "External Plaza Gates 1-3",
+        "dispatch_squad": "Steward Team Echo"
+    },
+    "FOOD_COURT_OVERFLOW_FOOD_COURT_ZONE_B": {
+        "primary_response_facility": "Crowd Control Command",
+        "room_number": "Concourse Sector B Queue Lanes",
+        "evacuation_route": "External Plaza Gates 4-6",
+        "dispatch_squad": "Steward Team Foxtrot"
+    },
+    "WEATHER_ALERT_SECTOR_ALL": {
+        "primary_response_facility": "Stadium Command Center",
+        "room_number": "Emergency Command Room",
+        "evacuation_route": "All staff report to Under-Grandstand Shelters",
+        "dispatch_squad": "Emergency Operations Unit"
+    },
+    "MEDICAL_EMERGENCY_SECTOR_102": {
+        "primary_response_facility": "Medical Station Echo",
+        "room_number": "Room 2B-Level 1",
+        "evacuation_route": "Tunnel Exit 4 to Concourse Corridor South",
+        "dispatch_squad": "Medics Team 3"
+    }
+}

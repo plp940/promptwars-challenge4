@@ -1,0 +1,13 @@
+{
+  "name": "smart-stadium-command-center",
+  "version": "1.0.0",
+  "description": "Smart Stadium Digital Twin Command Center with Deterministic Guardrails",
+  "scripts": {
+    "install:all": "npm install && npm install --prefix backend && npm run install-frontend",
+    "install-frontend": "cd frontend && npm install",
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
