@@ -61,7 +61,13 @@ Be concise (max 3-4 sentences).`;
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        if (!genAI || typeof genAI.getGenerativeModel !== 'function') {
+            throw new Error("Generative AI client not initialized (missing API key or config error)");
+        }
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        if (!model) {
+            throw new Error("Unable to retrieve gemini-2.5-flash model definition");
+        }
         const result = await model.generateContent({
             contents: [{ role: "user", parts: [{ text: systemInstruction }] }],
             generationConfig: {
@@ -199,7 +205,13 @@ ${sh}`;
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        if (!genAI || typeof genAI.getGenerativeModel !== 'function') {
+            throw new Error("Generative AI client not initialized (missing API key or config error)");
+        }
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        if (!model) {
+            throw new Error("Unable to retrieve gemini-2.5-flash model definition");
+        }
 
         // Standardize chat format for Gemini
         const formattedHistory = chatHistory.map(msg => ({
