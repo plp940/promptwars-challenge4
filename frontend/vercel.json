@@ -4,7 +4,7 @@
     "rewrites": [
         {
             "source": "/api/:path*",
-            "destination": "https://promptwars-challenge4.onrender.com"
+            "destination": "https://promptwars-challenge4.onrender.com/api/:path*"
         },
         {
             "source": "/(.*)",
