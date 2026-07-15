@@ -68,7 +68,41 @@ console.log(`Status: ${result7.status}`);
 console.log(`Changes Made: ${result7.changesMade}`);
 console.log("-----------------------------------------");
 
-if (result1.status === 'PASSED' && result2.status === 'OVERRIDDEN' && result3.status === 'OVERRIDDEN' && result4.status === 'OVERRIDDEN' && result5.status === 'PASSED' && result6.status === 'PASSED' && result7.status === 'PASSED') {
+// TEST CASE 8: Deduplication and Normalization of Repeating Key Segments
+console.log("TEST CASE 8: Normalization audit for repetitive string 'FOOD_COURT_OVERFLOW_FOOD_COURT_ZONE_A'");
+const compliantOutput8 = `Food court overflow in Zone A. Dispatch Steward Team Echo directly to Concourse Sector A Queue Lanes. The evacuation route is External Plaza Gates 1-3 and primary destination is Crowd Control Command.`;
+const result8 = verifyIncidentRecommendation('FOOD_COURT_OVERFLOW_FOOD_COURT_ZONE_A', compliantOutput8);
+console.log(`Status: ${result8.status}`);
+console.log(`Changes Made: ${result8.changesMade}`);
+console.log("-----------------------------------------");
+
+// TEST CASE 9: Dynamic splitting and mapping / Key Reconstruction Fallbacks (WATER_SHORTAGE_205)
+console.log("TEST CASE 9: Reconstruction fallback for string 'WATER_SHORTAGE_205'");
+const compliantOutput9 = `Water shortage logged. Primary destination: Logistics Station Central (Supply Room 2E). Evacuation Route: Mid-Level Concourse Service Path. Dispatch Logistics Support Unit 3 immediately to coordinates.`;
+const result9 = verifyIncidentRecommendation('WATER_SHORTAGE_205', compliantOutput9);
+console.log(`Status: ${result9.status}`);
+console.log(`Changes Made: ${result9.changesMade}`);
+console.log("-----------------------------------------");
+
+// TEST CASE 10: Preposition simplification ('WATER_SHORTAGE at SECTOR_102') using clean AT to underscore replacement
+console.log("TEST CASE 10: Preposition simplification for string 'WATER_SHORTAGE at SECTOR_102'");
+const result10 = verifyIncidentRecommendation('WATER_SHORTAGE at SECTOR_102', compliantOutput5);
+console.log(`Status: ${result10.status}`);
+console.log(`Changes Made: ${result10.changesMade}`);
+console.log("-----------------------------------------");
+
+if (
+    result1.status === 'PASSED' &&
+    result2.status === 'OVERRIDDEN' &&
+    result3.status === 'OVERRIDDEN' &&
+    result4.status === 'OVERRIDDEN' &&
+    result5.status === 'PASSED' &&
+    result6.status === 'PASSED' &&
+    result7.status === 'PASSED' &&
+    result8.status === 'PASSED' &&
+    result9.status === 'PASSED' &&
+    result10.status === 'PASSED'
+) {
     console.log("\n✅ ALL GUARDRAIL ENFORCEMENT VERIFICATIONS PASSED!");
     process.exit(0);
 } else {

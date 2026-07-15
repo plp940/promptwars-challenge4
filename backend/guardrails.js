@@ -23,13 +23,10 @@ try {
  * @returns {object} An object containing { verifiedOutput, status, changesMade, details }
  */
 export function verifyIncidentRecommendation(playbookKey, llmOutput) {
-  let normalizedKey = (playbookKey || '').trim().toUpperCase();
+  let normalizedKey = (playbookKey || '').trim();
 
-  // 1. Normalize connectors (" at ", " - ", ":") to spaces/underscores
-  normalizedKey = normalizedKey.replace(/\s+AT\s+/g, ' ');
-  normalizedKey = normalizedKey.replace(/\s*-\s*/g, ' ');
-  normalizedKey = normalizedKey.replace(/\s*:\s*/g, ' ');
-  normalizedKey = normalizedKey.replace(/[\s_]+/g, '_');
+  // 1. Simplify Preposition Parsing
+  normalizedKey = normalizedKey.toUpperCase().replace(/\s+AT\s+/g, '_').replace(/[\s_]+/g, '_');
 
   // Remap food court short layouts directly
   if (normalizedKey.includes('FOOD_COURT_ZONE_B') && !normalizedKey.includes('OVERFLOW')) {
@@ -70,13 +67,19 @@ export function verifyIncidentRecommendation(playbookKey, llmOutput) {
     if (!foundType) {
       if (normalizedKey.includes('MEDICAL')) foundType = 'MEDICAL_EMERGENCY';
       else if (normalizedKey.includes('WEATHER')) foundType = 'WEATHER_ALERT';
-      else if (normalizedKey.includes('FOOD_COURT')) foundType = 'FOOD_COURT_OVERFLOW';
+      else if (normalizedKey.includes('FOOD_COURT') || normalizedKey.includes('FOOD')) foundType = 'FOOD_COURT_OVERFLOW';
       else if (normalizedKey.includes('GATE')) foundType = 'GATE_OVERFLOW';
       else if (normalizedKey.includes('WASHROOM')) foundType = 'WASHROOM_CONGESTION';
       else if (normalizedKey.includes('WATER')) foundType = 'WATER_SHORTAGE';
     }
 
     let foundLocation = knownLocations.find(loc => {
+      if (loc.startsWith('SECTOR_')) {
+        const sectorNum = loc.replace('SECTOR_', '');
+        if (sectorNum !== 'ALL') {
+          return normalizedKey.includes(loc) || normalizedKey.includes(sectorNum);
+        }
+      }
       if (loc === 'FOOD_COURT_ZONE_A') {
         return normalizedKey.includes('FOOD_COURT_ZONE_A') || normalizedKey.includes('ZONE_A');
       }
@@ -101,6 +104,55 @@ export function verifyIncidentRecommendation(playbookKey, llmOutput) {
 
     if (foundType && foundLocation) {
       normalizedKey = `${foundType}_${foundLocation}`;
+    }
+  }
+
+  // Deduplicate Repeating Key Segments
+  if (normalizedKey.includes('FOOD_COURT_OVERFLOW_FOOD_COURT_ZONE_A')) {
+    normalizedKey = 'FOOD_COURT_OVERFLOW_ZONE_A';
+  }
+  if (normalizedKey.includes('FOOD_COURT_OVERFLOW_FOOD_COURT_ZONE_B')) {
+    normalizedKey = 'FOOD_COURT_OVERFLOW_ZONE_B';
+  }
+
+  // Double check playbooks map to active playbook configurations
+  if (!playbooks[normalizedKey]) {
+    const activeKeys = Object.keys(playbooks);
+    const normalizedLower = normalizedKey.toLowerCase();
+
+    const matchedKey = activeKeys.find(activeKey => {
+      const activeLower = activeKey.toLowerCase();
+
+      let typeMatch = false;
+      if (activeLower.includes('water_shortage') && normalizedLower.includes('water')) typeMatch = true;
+      else if (activeLower.includes('washroom_congestion') && normalizedLower.includes('washroom')) typeMatch = true;
+      else if (activeLower.includes('gate_overflow') && normalizedLower.includes('gate')) typeMatch = true;
+      else if (activeLower.includes('food_court_overflow') && (normalizedLower.includes('food') || normalizedLower.includes('court'))) typeMatch = true;
+      else if (activeLower.includes('weather_alert') && normalizedLower.includes('weather')) typeMatch = true;
+      else if (activeLower.includes('medical_emergency') && normalizedLower.includes('medical')) typeMatch = true;
+
+      if (!typeMatch) return false;
+
+      let locMatch = false;
+      if (activeLower.includes('sector_102') && (normalizedLower.includes('102') || normalizedLower.includes('sector_102'))) locMatch = true;
+      else if (activeLower.includes('sector_205') && (normalizedLower.includes('205') || normalizedLower.includes('sector_205'))) locMatch = true;
+      else if (activeLower.includes('sector_310') && (normalizedLower.includes('310') || normalizedLower.includes('sector_310'))) locMatch = true;
+      else if (activeLower.includes('south') && normalizedLower.includes('south')) locMatch = true;
+      else if (activeLower.includes('east') && normalizedLower.includes('east')) locMatch = true;
+      else if (activeLower.includes('west') && (normalizedLower.includes('west') || normalizedLower.includes('north'))) locMatch = true;
+      else if (activeLower.includes('gate_a') && (normalizedLower.includes('gate_a') || normalizedLower.endsWith('_a'))) locMatch = true;
+      else if (activeLower.includes('gate_b') && (normalizedLower.includes('gate_b') || normalizedLower.endsWith('_b'))) locMatch = true;
+      else if (activeLower.includes('gate_c') && (normalizedLower.includes('gate_c') || normalizedLower.endsWith('_c'))) locMatch = true;
+      else if (activeLower.includes('gate_d') && (normalizedLower.includes('gate_d') || normalizedLower.endsWith('_d'))) locMatch = true;
+      else if (activeLower.includes('zone_a') && (normalizedLower.includes('zone_a') || normalizedLower.includes('zonea') || normalizedLower.endsWith('_a') || (normalizedLower.includes('food') && normalizedLower.includes('a')))) locMatch = true;
+      else if (activeLower.includes('zone_b') && (normalizedLower.includes('zone_b') || normalizedLower.includes('zoneb') || normalizedLower.endsWith('_b') || (normalizedLower.includes('food') && normalizedLower.includes('b')))) locMatch = true;
+      else if (activeLower.includes('sector_all') && normalizedLower.includes('all')) locMatch = true;
+
+      return locMatch;
+    });
+
+    if (matchedKey) {
+      normalizedKey = matchedKey;
     }
   }
 
