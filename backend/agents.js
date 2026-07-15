@@ -44,6 +44,11 @@ export function getMockIncidentResolution(playbookKey) {
 export function runLocalStateChatParser(userMessage, currentTelemetry) {
     const question = userMessage.toLowerCase();
 
+    // 0. Weather, lightning, rain, or shelter query
+    if (question.includes("weather") || question.includes("lightning") || question.includes("rain") || question.includes("shelter")) {
+        return `[Copilot Engine (Local State)] Status: Critical Weather Alert active. Primary Response Facility: Stadium Command Center (Emergency Command Room). Evacuation Route: Under-Grandstand Shelters. Dispatch Squad: Emergency Operations Unit.`;
+    }
+
     // 1. Water depleting soon
     if (question.includes("water") || question.includes("stall") || question.includes("20 mins")) {
         const lowStalls = currentTelemetry.concessions.map(c => {

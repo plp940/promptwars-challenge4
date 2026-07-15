@@ -716,53 +716,96 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                               </table>
                             </div>
 
-                            <button
-                              onClick={async () => {
-                                alert("fan rerouting triggered");
+                            {(() => {
+                              const anomalyType = anomaly.type;
 
-                                const relatedIncident = state.incidents.find(
-                                  i => i.location_zone === anomaly.location &&
-                                    (i.incident_type === 'GATE_OVERFLOW' || i.incident_type === 'CROWD_REROUTING')
-                                );
-                                const targetIncidentId = relatedIncident ? relatedIncident.incident_id : null;
+                              const isShortage =
+                                anomalyType === 'WATER_SHORTAGE' ||
+                                anomalyType === 'FOOD_COURT_OVERFLOW' ||
+                                anomalyType === 'WASHROOM_CONGESTION';
 
-                                if (targetIncidentId) {
-                                  try {
-                                    await fetch('/api/incident/resolve', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ incident_id: targetIncidentId })
-                                    });
-                                  } catch (err) {
-                                    console.error("Failed to resolve related incident on backend:", err);
-                                  }
-                                }
+                              if (isShortage) {
+                                return null;
+                              }
 
-                                setState(prev => {
-                                  const updatedIncidents = prev.incidents.filter(
-                                    i => !(i.location_zone === anomaly.location && (i.incident_type === 'GATE_OVERFLOW' || i.incident_type === 'CROWD_REROUTING' || i.incident_id === targetIncidentId))
-                                  );
-                                  const updatedAnomalies = prev.anomalies.filter(
-                                    an => an.id !== anomaly.id && an.location !== anomaly.location
-                                  );
-                                  const updatedGates = prev.gates.map(g => {
-                                    if (g.zone_id === anomaly.location) {
-                                      return { ...g, crowd_density: 1.5, status: 'NORMAL' };
+                              let buttonText = '';
+                              let alertMsg = '';
+                              let resolvedTypes = [];
+
+                              if (anomalyType === 'MEDICAL_EMERGENCY') {
+                                buttonText = '🚑 Dispatch Medics Team';
+                                alertMsg = 'medical team dispatched';
+                                resolvedTypes = ['MEDICAL_EMERGENCY'];
+                              } else if (anomalyType === 'WEATHER_ALERT' || anomalyType === 'BAD_WEATHER_ALERT') {
+                                buttonText = '🚨 Deploy Evacuation / Shelter Protocol';
+                                alertMsg = 'deployed evacutation';
+                                resolvedTypes = ['WEATHER_ALERT', 'BAD_WEATHER_ALERT'];
+                              } else if (anomalyType === 'GATE_OVERFLOW' || anomalyType === 'POST_MATCH_EXIT_SURGE' || anomalyType === 'CROWD_REROUTING') {
+                                buttonText = '🚨 Trigger Fan Rerouting';
+                                alertMsg = 'fan rerouting triggered';
+                                resolvedTypes = ['GATE_OVERFLOW', 'POST_MATCH_EXIT_SURGE', 'CROWD_REROUTING'];
+                              } else {
+                                buttonText = '🚨 Execute Emergency Protocol';
+                                alertMsg = ' 🚨Emergency Protocol Executed';
+                                resolvedTypes = [anomalyType];
+                              }
+
+                              return (
+                                <button
+                                  onClick={async () => {
+                                    alert(alertMsg);
+
+                                    const relatedIncident = state.incidents.find(
+                                      i => (i.location_zone === anomaly.location && resolvedTypes.includes(i.incident_type)) ||
+                                        (anomaly.id && anomaly.id.includes(i.incident_id)) ||
+                                        (anomaly.source && anomaly.source === i.incident_id)
+                                    );
+                                    let targetIncidentId = relatedIncident ? relatedIncident.incident_id : null;
+
+                                    if (!targetIncidentId && anomaly.id && anomaly.id.startsWith('ANOMALY-INCIDENT-')) {
+                                      targetIncidentId = anomaly.id.replace('ANOMALY-INCIDENT-', '');
                                     }
-                                    return g;
-                                  });
-                                  return {
-                                    ...prev,
-                                    incidents: updatedIncidents,
-                                    anomalies: updatedAnomalies,
-                                    gates: updatedGates
-                                  };
-                                });
-                              }}
-                              className="w-full bg-[#ff003c]/20 hover:bg-[#ff003c]/35 text-[#ff003c] border border-[#ff003c]/40 text-xs py-2 rounded font-extrabold uppercase tracking-widest flex items-center justify-center gap-1.5 transition"
-                            >
-                              🚨 Trigger Fan Rerouting
-                            </button>
+
+                                    if (targetIncidentId) {
+                                      try {
+                                        await fetch('/api/incident/resolve', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ incident_id: targetIncidentId })
+                                        });
+                                      } catch (err) {
+                                        console.error("Failed to resolve related incident on backend:", err);
+                                      }
+                                    }
+
+                                    setState(prev => {
+                                      const updatedIncidents = prev.incidents.filter(
+                                        i => i.incident_id !== targetIncidentId &&
+                                          !(i.location_zone === anomaly.location && resolvedTypes.includes(i.incident_type))
+                                      );
+                                      const updatedAnomalies = prev.anomalies.filter(
+                                        an => an.id !== anomaly.id && an.location !== anomaly.location
+                                      );
+                                      const updatedGates = prev.gates.map(g => {
+                                        if (g.zone_id === anomaly.location && resolvedTypes.includes('GATE_OVERFLOW')) {
+                                          return { ...g, crowd_density: 1.5, status: 'NORMAL' };
+                                        }
+                                        return g;
+                                      });
+                                      return {
+                                        ...prev,
+                                        incidents: updatedIncidents,
+                                        anomalies: updatedAnomalies,
+                                        gates: updatedGates
+                                      };
+                                    });
+                                  }}
+                                  className="w-full bg-[#ff003c]/20 hover:bg-[#ff003c]/35 text-[#ff003c] border border-[#ff003c]/40 text-xs py-2 rounded font-extrabold uppercase tracking-widest flex items-center justify-center gap-1.5 transition"
+                                >
+                                  {buttonText}
+                                </button>
+                              );
+                            })()}
                           </div>
                         )}
                       </div>
