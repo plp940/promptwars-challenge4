@@ -718,33 +718,46 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
 
                             <button
                               onClick={async () => {
-                                const newIncident = {
-                                  incident_id: `INCIDENT-REROUTE-${Math.floor(100 + Math.random() * 900)}`,
-                                  location_zone: anomaly.location,
-                                  incident_type: 'CROWD_REROUTING',
-                                  priority: 'CRITICAL',
-                                  details: `Automated crowd-mitigation reroute deployed for zone ${anomaly.location}.`,
-                                  timestamp: new Date().toISOString()
-                                };
-                                setState(prev => ({
-                                  ...prev,
-                                  incidents: [...prev.incidents, newIncident]
-                                }));
+                                alert("fan rerouting triggered");
 
-                                try {
-                                  await fetch('/api/incident', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                      location_zone: anomaly.location,
-                                      incident_type: 'CROWD_REROUTING',
-                                      priority: 'CRITICAL',
-                                      details: `Automated crowd-mitigation reroute deployed for zone ${anomaly.location}.`
-                                    })
-                                  });
-                                } catch (err) {
-                                  console.error("Failed to trigger crowd rerouting:", err);
+                                const relatedIncident = state.incidents.find(
+                                  i => i.location_zone === anomaly.location &&
+                                    (i.incident_type === 'GATE_OVERFLOW' || i.incident_type === 'CROWD_REROUTING')
+                                );
+                                const targetIncidentId = relatedIncident ? relatedIncident.incident_id : null;
+
+                                if (targetIncidentId) {
+                                  try {
+                                    await fetch('/api/incident/resolve', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ incident_id: targetIncidentId })
+                                    });
+                                  } catch (err) {
+                                    console.error("Failed to resolve related incident on backend:", err);
+                                  }
                                 }
+
+                                setState(prev => {
+                                  const updatedIncidents = prev.incidents.filter(
+                                    i => !(i.location_zone === anomaly.location && (i.incident_type === 'GATE_OVERFLOW' || i.incident_type === 'CROWD_REROUTING' || i.incident_id === targetIncidentId))
+                                  );
+                                  const updatedAnomalies = prev.anomalies.filter(
+                                    an => an.id !== anomaly.id && an.location !== anomaly.location
+                                  );
+                                  const updatedGates = prev.gates.map(g => {
+                                    if (g.zone_id === anomaly.location) {
+                                      return { ...g, crowd_density: 1.5, status: 'NORMAL' };
+                                    }
+                                    return g;
+                                  });
+                                  return {
+                                    ...prev,
+                                    incidents: updatedIncidents,
+                                    anomalies: updatedAnomalies,
+                                    gates: updatedGates
+                                  };
+                                });
                               }}
                               className="w-full bg-[#ff003c]/20 hover:bg-[#ff003c]/35 text-[#ff003c] border border-[#ff003c]/40 text-xs py-2 rounded font-extrabold uppercase tracking-widest flex items-center justify-center gap-1.5 transition"
                             >
