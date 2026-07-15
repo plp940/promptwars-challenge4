@@ -94,7 +94,8 @@ console.log("-----------------------------------------\n");
 // Dynamic import to test generateIncidentResolution API error handling paths
 process.env.GEMINI_API_KEY = 'test-mock-key-disable-mock';
 const { GoogleGenerativeAI } = await import('@google/generative-ai');
-const { generateIncidentResolution } = await import('./agents.js');
+const agentsModule = await import('./agents.js');
+const { generateIncidentResolution } = agentsModule;
 
 let simulateErrorStatus = null;
 GoogleGenerativeAI.prototype.getGenerativeModel = function () {
@@ -130,6 +131,28 @@ const pass404 = result404.includes("Gate Control Cabin A") && result404.includes
 console.log(`Intercept status: ${pass404 ? "SUCCESS (Matched local playbook)" : "FAILED"}`);
 console.log("-----------------------------------------\n");
 
+console.log("TEST CASE 13: verifyIncidentRecommendation key normalization under highly degraded string environment");
+const degradedKey = "  #*  MeDiCaL   --  at --   @   sEcToR_102 !!!  ";
+const compliantOutput1 = `[🛡️ VERIFIED CRITICAL ALERT - MEDICAL_EMERGENCY_SECTOR_102]
+Medical emergency flagged in Sector 102. Ground crews, immediately dispatch Medics Team 3 to the location. The evacuation route is Tunnel Exit 4 to Concourse Corridor South. Please transport the patient immediately to Medical Station Echo (Room 2B-Level 1) for urgent care.
+
+Data Integrity Status: Validated via Deterministic System Playbook v1.02. Hallucination Risk: 0%.`;
+const result13 = verifyIncidentRecommendation(degradedKey, compliantOutput1);
+console.log(`Status: ${result13.status}`);
+const passDegradedNormalization = (result13.status === 'PASSED');
+console.log(`Intercept status: ${passDegradedNormalization ? "SUCCESS (Correctly normalized and passed)" : "FAILED"}`);
+console.log("-----------------------------------------\n");
+
+console.log("TEST CASE 14: Assert 30-second local cooling-down hold loop activation on 429 status code");
+// Since Test Case 11 triggered a 429 exception, the cooldown hold block must have set apiCooldownUntil!
+const cooldownSetting = agentsModule.apiCooldownUntil;
+const now = Date.now();
+const diff = cooldownSetting - now;
+const passCooldownAsserter = diff > 20000 && diff <= 30500;
+console.log(`Cooldown Remaining: ${Math.round(diff / 1000)}s`);
+console.log(`Hold Loop Status: ${passCooldownAsserter ? "ACTIVE & VALIDATED" : "FAILED"}`);
+console.log("-----------------------------------------\n");
+
 if (
     result1.status === 'PASSED' &&
     result2.status === 'OVERRIDDEN' &&
@@ -142,11 +165,13 @@ if (
     result9.status === 'PASSED' &&
     result10.status === 'PASSED' &&
     pass429 &&
-    pass404
+    pass404 &&
+    passDegradedNormalization &&
+    passCooldownAsserter
 ) {
-    console.log("\n✅ ALL GUARDRAIL & API EXCEPTION ROBUSTNESS TEST CASES PASSED!");
+    console.log("\n✅ ALL GUARDRAIL, DEGRADED STRINGS & COOLDOWN LOOP ROBUSTNESS TEST CASES PASSED!");
     process.exit(0);
 } else {
-    console.error("\n❌ GUARDRAIL & API EXCEPTION ROBUSTNESS TEST CASES FAILED!");
+    console.error("\n❌ GUARDRAIL, DEGRADED STRINGS & COOLDOWN LOOP ROBUSTNESS TEST CASES FAILED!");
     process.exit(1);
 }

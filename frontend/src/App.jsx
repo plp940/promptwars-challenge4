@@ -44,6 +44,20 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
   const isLoading = chatLoading; // Alias to prevent parallel execution frame overhead
   const [activeUtilityTab, setActiveUtilityTab] = useState('concessions');
   const chatBottomRef = useRef(null);
+  const overlayInputRef = useRef(null);
+  const fullscreenInputRef = useRef(null);
+
+  useEffect(() => {
+    if (copilotUIState === 'overlay') {
+      setTimeout(() => {
+        overlayInputRef.current?.focus();
+      }, 50);
+    } else if (copilotUIState === 'fullscreen') {
+      setTimeout(() => {
+        fullscreenInputRef.current?.focus();
+      }, 50);
+    }
+  }, [copilotUIState]);
 
   // Guardrail Simulation Settings
   const [simulateHallucination, setSimulateHallucination] = useState(false);
@@ -326,9 +340,9 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                 <span className="text-[10px] bg-[#1a2e37] text-neonBlue px-2 py-0.5 rounded font-mono">CCTV counting</span>
               </div>
 
-              <div className="space-y-4">
+              <ul role="list" className="space-y-4">
                 {state.gates.map(gate => (
-                  <div key={gate.zone_id} className="p-3 border border-[#1a1f33] rounded-md bg-[#0a0d17]/50 flex justify-between items-center hover:bg-[#0d1222] transition">
+                  <li key={gate.zone_id} className="p-3 border border-[#1a1f33] rounded-md bg-[#0a0d17]/50 flex justify-between items-center hover:bg-[#0d1222] transition">
                     <div>
                       <div className="font-semibold text-white text-sm">{gate.zone_id}</div>
                       <div className="text-xs text-darkMuted mt-0.5">
@@ -339,7 +353,7 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                       </div>
                     </div>
 
-                    <div className="text-right" aria-live="polite">
+                    <div className="text-right" aria-live={gate.status === 'CRITICAL' ? 'assertive' : 'polite'}>
                       <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded ${gate.status === 'CRITICAL' ? 'bg-[#ff003c]/20 text-neonRed border border-[#ff003c]/40 glow-red animate-pulse' :
                         gate.status === 'CONGESTED' ? 'bg-neonYellow/20 text-neonYellow border border-neonYellow/40' :
                           'bg-neonGreen/10 text-neonGreen border border-neonGreen/30'
@@ -347,9 +361,9 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                         {gate.status}
                       </span>
                     </div>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
 
             {/* CONSOLIDATED UTILITIES TAB PANEL */}
@@ -398,7 +412,7 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                             <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${stall.status === 'DEPLETED' ? 'bg-neonRed/20 text-neonRed border border-neonRed/40 animate-pulse' :
                               stall.status === 'LOW' ? 'bg-neonYellow/20 text-neonYellow border border-neonYellow/40' :
                                 'bg-neonGreen/10 text-neonGreen border border-neonGreen/30'
-                              }`} aria-live="polite">
+                              }`} aria-live={stall.status === 'DEPLETED' ? 'assertive' : 'polite'}>
                               {stall.status}
                             </span>
                           </div>
@@ -440,7 +454,7 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                               <span className="font-bold text-white text-xs mr-2">{fc.zone_id}</span>
                               <span className="text-[10px] text-darkMuted font-mono">Density: <span className="text-gray-300">{fc.crowd_density} / sqm</span></span>
                             </div>
-                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${isHigh ? 'bg-neonRed/20 text-neonRed border border-neonRed/40 animate-pulse' : 'bg-[#101423] text-darkMuted'}`} aria-live="polite">
+                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${isHigh ? 'bg-neonRed/20 text-neonRed border border-neonRed/40 animate-pulse' : 'bg-[#101423] text-darkMuted'}`} aria-live={isHigh ? 'assertive' : 'polite'}>
                               {fc.refill_status}
                             </span>
                           </div>
@@ -488,7 +502,7 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                                 </span>
                               )}
                             </div>
-                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${hasAlert ? 'bg-neonRed text-white animate-pulse' : 'bg-[#101423] text-darkMuted'}`} aria-live="polite">
+                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${hasAlert ? 'bg-neonRed text-white animate-pulse' : 'bg-[#101423] text-darkMuted'}`} aria-live={hasAlert ? 'assertive' : 'polite'}>
                               {hasAlert ? 'SECURITY ALERT' : 'NOMINAL'}
                             </span>
                           </div>
@@ -548,7 +562,7 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                       const isDelayed = s.status === 'DELAYED';
                       return (
                         <div key={s.id} className={`p-2 border rounded font-mono text-[9px] flex flex-col justify-between ${isDelayed ? 'bg-neonRed/10 border-neonRed/30 text-neonRed animate-pulse' : 'bg-neonGreen/10 border-neonGreen/30 text-neonGreen'
-                          }`} aria-live="polite">
+                          }`} aria-live={isDelayed ? 'assertive' : 'polite'}>
                           <span className="font-bold truncate" title={s.id}>{s.id.replace('SHUTTLE_', '')}</span>
                           <span className="opacity-60 text-[8px] truncate mt-1 leading-none">{s.route}</span>
                           <span className="text-[8px] font-black mt-0.5 tracking-wider uppercase">{s.status}</span>
@@ -587,13 +601,13 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                   <p className="text-xs max-w-xs mt-1">Ready for telemetry triggers. Guardrail structures armed.</p>
                 </div>
               ) : (
-                <div className="space-y-6">
+                <ul role="list" className="space-y-6">
                   {state.anomalies.map(anomaly => {
                     const validation = anomaly.evaluation;
                     const isVerifying = verifyingAnomalyId === anomaly.id;
 
                     return (
-                      <div key={anomaly.id} className="p-4 border border-[#2b2416] rounded-md bg-[#13110b]/55 space-y-4">
+                      <li key={anomaly.id} className="p-4 border border-[#2b2416] rounded-md bg-[#13110b]/55 space-y-4">
                         <div className="flex justify-between items-start gap-2">
                           <div>
                             <span className={`inline-block text-[9px] font-bold tracking-wider px-1.5 py-0.5 rounded text-white bg-red-800 uppercase`} aria-live="assertive">
@@ -810,10 +824,10 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                             })()}
                           </div>
                         )}
-                      </div>
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
               )}
             </div>
 
@@ -998,25 +1012,27 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                 {state.incidents.length === 0 ? (
                   <div className="text-center text-xs text-darkMuted py-8 font-mono">No incident cases opened.</div>
                 ) : (
-                  state.incidents.map(inc => (
-                    <div key={inc.incident_id} className="p-2 border border-[#2b1f24] bg-[#140e11]/45 rounded text-[10px] space-y-1 flex justify-between items-start gap-1 font-mono">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center">
-                          <span className="font-bold text-gray-300 truncate text-[9px]">{inc.incident_id}</span>
-                          <span className="text-neonRed font-black uppercase text-[8px]">{inc.priority}</span>
+                  <ul role="list" className="space-y-2">
+                    {state.incidents.map(inc => (
+                      <li key={inc.incident_id} className="p-2 border border-[#2b1f24] bg-[#140e11]/45 rounded text-[10px] space-y-1 flex justify-between items-start gap-1 font-mono">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-gray-300 truncate text-[9px]">{inc.incident_id}</span>
+                            <span className="text-neonRed font-black uppercase text-[8px]">{inc.priority}</span>
+                          </div>
+                          <p className="text-gray-300 font-semibold truncate mt-0.5">{inc.location_zone}: {inc.incident_type}</p>
+                          <p className="text-darkMuted text-[9px] leading-tight italic line-clamp-2 mt-0.5">{inc.details}</p>
                         </div>
-                        <p className="text-gray-300 font-semibold truncate mt-0.5">{inc.location_zone}: {inc.incident_type}</p>
-                        <p className="text-darkMuted text-[9px] leading-tight italic line-clamp-2 mt-0.5">{inc.details}</p>
-                      </div>
-                      <button
-                        onClick={() => resolveIncident(inc.incident_id)}
-                        className="bg-transparent hover:bg-neonGreen/20 border border-neonGreen/30 hover:border-neonGreen/60 text-neonGreen p-1 rounded transition shrink-0 ml-1 mt-0.5"
-                        title="Resolve & Wipe"
-                      >
-                        <CheckCircle className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))
+                        <button
+                          onClick={() => resolveIncident(inc.incident_id)}
+                          className="bg-transparent hover:bg-neonGreen/20 border border-neonGreen/30 hover:border-neonGreen/60 text-neonGreen p-1 rounded transition shrink-0 ml-1 mt-0.5"
+                          title="Resolve & Wipe"
+                        >
+                          <CheckCircle className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </div>
@@ -1161,9 +1177,9 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <ul role="list" className="flex-1 overflow-y-auto p-4 space-y-3">
               {chatHistory.map((msg, index) => (
-                <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <li key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] rounded p-2.5 text-xs leading-relaxed ${msg.sender === 'user'
                     ? 'bg-[#1b223c] text-white rounded-br-none border border-[#2b355d]'
                     : 'bg-teal-900/60 text-teal-100 rounded-bl-none border border-teal-700/50'
@@ -1173,24 +1189,25 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                     </p>
                     <p className="whitespace-pre-line font-mono text-[11px]">{msg.text}</p>
                   </div>
-                </div>
+                </li>
               ))}
               {chatLoading && (
-                <div className="flex justify-start">
+                <li className="flex justify-start">
                   <div className="bg-[#101423] border border-[#151c35] text-darkMuted rounded rounded-bl-none p-2 text-xs flex items-center gap-2">
                     <RefreshCw className="h-3.5 w-3.5 animate-spin text-neonBlue" />
                     <span>Copilot parsing telemetry...</span>
                   </div>
-                </div>
+                </li>
               )}
-              <div ref={chatBottomRef} />
-            </div>
+              <li ref={chatBottomRef} />
+            </ul>
 
             <form onSubmit={sendChatMessage} className="p-3 border-t border-teal-800 bg-[#073633] flex gap-1.5">
               <label htmlFor="copilot-chat-input-overlay" className="sr-only">Query Staff Copilot Overlay Input</label>
               <input
                 type="text"
                 id="copilot-chat-input-overlay"
+                ref={overlayInputRef}
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 placeholder="Ask: 'Which gate is under stress?'"
@@ -1243,9 +1260,9 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <ul role="list" className="flex-1 overflow-y-auto p-6 space-y-4">
                 {chatHistory.map((msg, index) => (
-                  <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <li key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[75%] rounded p-4 text-xs leading-relaxed ${msg.sender === 'user'
                       ? 'bg-[#1b223c] text-white rounded-br-none border border-[#2b355d]'
                       : 'bg-[#101423] text-teal-300 rounded-bl-none border border-[#151c35]'
@@ -1255,24 +1272,25 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                       </p>
                       <p className="whitespace-pre-line font-mono text-[12px]">{msg.text}</p>
                     </div>
-                  </div>
+                  </li>
                 ))}
                 {chatLoading && (
-                  <div className="flex justify-start">
+                  <li className="flex justify-start">
                     <div className="bg-[#101423] border border-[#151c35] text-darkMuted rounded rounded-bl-none p-3.5 text-xs flex items-center gap-2">
                       <RefreshCw className="h-4 w-4 animate-spin text-neonBlue" />
                       <span>Copilot parsing telemetry...</span>
                     </div>
-                  </div>
+                  </li>
                 )}
-                <div ref={chatBottomRef} />
-              </div>
+                <li ref={chatBottomRef} />
+              </ul>
 
               <form onSubmit={sendChatMessage} className="p-4 border-t border-[#1b223c] bg-[#0c0e18] flex gap-2">
                 <label htmlFor="copilot-chat-input-fullscreen" className="sr-only">Query Staff Copilot Fullscreen Input</label>
                 <input
                   type="text"
                   id="copilot-chat-input-fullscreen"
+                  ref={fullscreenInputRef}
                   value={currentMessage}
                   onChange={(e) => setCurrentMessage(e.target.value)}
                   placeholder="Ask: 'Which gate is under stress?'"

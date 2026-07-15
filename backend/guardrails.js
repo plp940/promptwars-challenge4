@@ -56,8 +56,14 @@ const ROOM_PATTERN = /Room \d[A-Z]-[Level\s\d]+/gi;
 export function verifyIncidentRecommendation(playbookKey, llmOutput) {
   let normalizedKey = (playbookKey || '').trim();
 
+  // Strip arbitrary special symbols/characters to handle degraded environments
+  normalizedKey = normalizedKey.replace(/[^a-zA-Z0-9\s_-]/g, ' ');
+
   // 1. Simplify Preposition Parsing
   normalizedKey = normalizedKey.toUpperCase().replace(AT_REGEX, '_').replace(SPACES_UNDERSCORES_REGEX, '_');
+
+  // Trim leading/trailing underscores
+  normalizedKey = normalizedKey.replace(/^_+|_+$/g, '');
 
   // Remap food court short layouts directly
   if (normalizedKey.includes('FOOD_COURT_ZONE_B') && !normalizedKey.includes('OVERFLOW')) {

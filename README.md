@@ -9,6 +9,15 @@ A real-time, low-latency Smart Stadium Digital Twin and Generative AI Command Ce
 
 ---
 
+## 🏛️ Challenge Vertical Alignment
+
+*   **Chosen Vertical:** Smart Stadiums & Tournament Operations
+*   **Target User Base:** Stadium Command Center Operators, Venue Security, and Field Volunteers.
+*   **Core Objective:** Orchestrate physical facility management and dynamic hazard responses by merging live telemetry feeds with responsible, guardrailed Generative AI workflows.
+
+
+---
+
 ## 📌 Problem Statement
 
 Host arenas during global tournaments struggle with sudden crowd peaks, resource strains, and critical emergencies. Standard GPS fails under concrete dome geometries and deep interior zones, resulting in blind spots for emergency responders. 
@@ -19,8 +28,7 @@ Traditional Command Centers rely on static cameras, manual dispatch, and siloed 
 
 ## 🏛️ System Architecture Layers
 
-The Smart Stadium Command Center is architected across five distinct technical layers:
-
+The Smart Stadium Command Center application processes data through a **hybrid probabilistic + deterministic safety architecture** across five modular system layers:
 ```
 [Layer 1: Edge Simulation] ──> [Layer 2: Digital Twin State] ──> [Layer 3: GenAI Multi-Agent]
                                                                         │
@@ -90,7 +98,36 @@ Click the floating green-emerald Copilot button in the bottom-right corner to op
 The floating logo button acts as a toggle: clicking the logo opens the chat box; clicking the logo again automatically minimizes it, making the drawer transition smoothly.
 
 ---
+### ⚙️ Real-World Usability & Engineering Polish
+### 1. Robust Rate Limit (429) & Quota Shields
+Because the automated digital twin background loop continuously triggers anomalies to simulate a live event environment, free-tier API keys can exhaust quotas rapidly. The application features a Graceful Fallback Mechanism:
 
+If the backend catches a 429 Too Many Requests error from the Gemini API, it suppresses the server failure.
+
+It immediately executes local failover logic, serving the matching local playbook response dynamically to ensure zero operational downtime for command operators.
+
+### 2. Contextual UI Action Control
+The center action button changes dynamically depending on the type of active anomaly selected by the operator, matching real-world operational language:
+
+WEATHER_ALERT ──> 🚨 Deploy Evacuation / Shelter Protocol
+
+GATE_OVERFLOW ──> 🚨 Trigger Fan Rerouting
+
+FOOD_COURT_OVERFLOW ──> 🍔 Dispatch Refill Units
+
+MEDICAL_EMERGENCY ──> 🚑 Dispatch Medics Team
+
+### 3. Comprehensive Accessibility (WCAG Compliance)
+Screen Reader Optimization: Every interactive input, selector dropdown, and interactive SVG map marker is equipped with descriptive aria-label and aria-live="polite" hooks.
+
+Keyboard Navigable Elements: Form sub-panels and custom control triggers are explicitly tied to semantic <label> descriptors with complete id mappings.
+
+📋 Strategic System Assumptions
+Network Constraints & Local Fallbacks: It is assumed that global sports arenas experience extreme cellular congestion. The architecture intentionally relies on low-overhead Server-Sent Events (SSE) for data streaming instead of heavy WebSockets, and uses cached local playbooks for complete offline resilience.
+
+API Key Rate Limits: The background simulation loop deliberately runs continuously to stress-test the state framework. The app assumes free-tier keys will hit rate boundaries, which is why the dual-mode execution logic seamlessly runs both live LLM queries and token-less local simulations side-by-side.
+
+---
 ## 🚀 Step-by-Step Production Deployment Guide
 
 Deploy the system at zero-cost using **Render** for the backend and **Vercel** for the frontend.
