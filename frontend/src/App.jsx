@@ -717,14 +717,38 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                             </div>
 
                             <button
-                              onClick={() => {
-                                // Close verification result by sending request to reset verification for it
-                                setSimulateHallucination(false);
-                                runGuardrailAnalysis(anomaly);
+                              onClick={async () => {
+                                const newIncident = {
+                                  incident_id: `INCIDENT-REROUTE-${Math.floor(100 + Math.random() * 900)}`,
+                                  location_zone: anomaly.location,
+                                  incident_type: 'CROWD_REROUTING',
+                                  priority: 'CRITICAL',
+                                  details: `Automated crowd-mitigation reroute deployed for zone ${anomaly.location}.`,
+                                  timestamp: new Date().toISOString()
+                                };
+                                setState(prev => ({
+                                  ...prev,
+                                  incidents: [...prev.incidents, newIncident]
+                                }));
+
+                                try {
+                                  await fetch('/api/incident', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      location_zone: anomaly.location,
+                                      incident_type: 'CROWD_REROUTING',
+                                      priority: 'CRITICAL',
+                                      details: `Automated crowd-mitigation reroute deployed for zone ${anomaly.location}.`
+                                    })
+                                  });
+                                } catch (err) {
+                                  console.error("Failed to trigger crowd rerouting:", err);
+                                }
                               }}
-                              className="w-full bg-[#1b223c] text-xs py-1 rounded text-darkMuted hover:text-white transition hover:bg-[#252f4f]"
+                              className="w-full bg-[#ff003c]/20 hover:bg-[#ff003c]/35 text-[#ff003c] border border-[#ff003c]/40 text-xs py-2 rounded font-extrabold uppercase tracking-widest flex items-center justify-center gap-1.5 transition"
                             >
-                              Re-Verify / Test Mode Toggle
+                              🚨 Trigger Fan Rerouting
                             </button>
                           </div>
                         )}

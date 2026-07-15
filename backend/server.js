@@ -347,6 +347,30 @@ setInterval(async () => {
     state.stats.totalEntries += Math.round(state.gates.reduce((acc, g) => acc + g.throughput_rate, 0) / 20);
 
     // 3b. Automatic threshold incident integration rules
+    state.gates.forEach(gate => {
+        if (gate.status === 'CRITICAL' || gate.status === 'CONGESTED') {
+            const hasAlert = state.incidents.some(i => i.location_zone === gate.zone_id && i.incident_type === 'GATE_OVERFLOW');
+            const logMessage = `CRITICAL: Overcrowding at Gate ${gate.zone_id.replace('GATE_', '')} - Rerouting protocols active.`;
+            if (!hasAlert) {
+                state.incidents.push({
+                    incident_id: `INCIDENT-${gate.zone_id}-${Math.floor(100 + Math.random() * 900)}`,
+                    location_zone: gate.zone_id,
+                    incident_type: 'GATE_OVERFLOW',
+                    priority: 'CRITICAL',
+                    details: logMessage,
+                    timestamp: new Date().toISOString()
+                });
+            } else {
+                state.incidents = state.incidents.map(i => {
+                    if (i.location_zone === gate.zone_id && i.incident_type === 'GATE_OVERFLOW') {
+                        return { ...i, details: logMessage };
+                    }
+                    return i;
+                });
+            }
+        }
+    });
+
     if (!isTPCooldownActive) {
         state.washrooms.forEach(w => {
             if (w.occupancy > 80) {
@@ -403,6 +427,10 @@ setInterval(async () => {
 
     // Auto-resolve self-healing code for active incidents that fall back below thresholds
     state.incidents = state.incidents.filter(inc => {
+        if (inc.incident_type === 'GATE_OVERFLOW') {
+            const g = state.gates.find(gate => gate.zone_id === inc.location_zone);
+            if (g && g.status !== 'CRITICAL' && g.status !== 'CONGESTED') return false;
+        }
         if (inc.incident_type === 'WASHROOM_CONGESTION') {
             const w = state.washrooms.find(rest => rest.zone_id === inc.location_zone);
             if (w && w.occupancy <= 80) return false;
