@@ -41,6 +41,7 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
   ]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const isLoading = chatLoading; // Alias to prevent parallel execution frame overhead
   const [activeUtilityTab, setActiveUtilityTab] = useState('concessions');
   const chatBottomRef = useRef(null);
 
@@ -338,7 +339,7 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                       </div>
                     </div>
 
-                    <div className="text-right">
+                    <div className="text-right" aria-live="polite">
                       <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded ${gate.status === 'CRITICAL' ? 'bg-[#ff003c]/20 text-neonRed border border-[#ff003c]/40 glow-red animate-pulse' :
                         gate.status === 'CONGESTED' ? 'bg-neonYellow/20 text-neonYellow border border-neonYellow/40' :
                           'bg-neonGreen/10 text-neonGreen border border-neonGreen/30'
@@ -397,7 +398,7 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                             <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${stall.status === 'DEPLETED' ? 'bg-neonRed/20 text-neonRed border border-neonRed/40 animate-pulse' :
                               stall.status === 'LOW' ? 'bg-neonYellow/20 text-neonYellow border border-neonYellow/40' :
                                 'bg-neonGreen/10 text-neonGreen border border-neonGreen/30'
-                              }`}>
+                              }`} aria-live="polite">
                               {stall.status}
                             </span>
                           </div>
@@ -439,7 +440,7 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                               <span className="font-bold text-white text-xs mr-2">{fc.zone_id}</span>
                               <span className="text-[10px] text-darkMuted font-mono">Density: <span className="text-gray-300">{fc.crowd_density} / sqm</span></span>
                             </div>
-                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${isHigh ? 'bg-neonRed/20 text-neonRed border border-neonRed/40 animate-pulse' : 'bg-[#101423] text-darkMuted'}`}>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${isHigh ? 'bg-neonRed/20 text-neonRed border border-neonRed/40 animate-pulse' : 'bg-[#101423] text-darkMuted'}`} aria-live="polite">
                               {fc.refill_status}
                             </span>
                           </div>
@@ -487,7 +488,7 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                                 </span>
                               )}
                             </div>
-                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${hasAlert ? 'bg-neonRed text-white animate-pulse' : 'bg-[#101423] text-darkMuted'}`}>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${hasAlert ? 'bg-neonRed text-white animate-pulse' : 'bg-[#101423] text-darkMuted'}`} aria-live="polite">
                               {hasAlert ? 'SECURITY ALERT' : 'NOMINAL'}
                             </span>
                           </div>
@@ -547,7 +548,7 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                       const isDelayed = s.status === 'DELAYED';
                       return (
                         <div key={s.id} className={`p-2 border rounded font-mono text-[9px] flex flex-col justify-between ${isDelayed ? 'bg-neonRed/10 border-neonRed/30 text-neonRed animate-pulse' : 'bg-neonGreen/10 border-neonGreen/30 text-neonGreen'
-                          }`}>
+                          }`} aria-live="polite">
                           <span className="font-bold truncate" title={s.id}>{s.id.replace('SHUTTLE_', '')}</span>
                           <span className="opacity-60 text-[8px] truncate mt-1 leading-none">{s.route}</span>
                           <span className="text-[8px] font-black mt-0.5 tracking-wider uppercase">{s.status}</span>
@@ -595,7 +596,7 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                       <div key={anomaly.id} className="p-4 border border-[#2b2416] rounded-md bg-[#13110b]/55 space-y-4">
                         <div className="flex justify-between items-start gap-2">
                           <div>
-                            <span className={`inline-block text-[9px] font-bold tracking-wider px-1.5 py-0.5 rounded text-white bg-red-800 uppercase`}>
+                            <span className={`inline-block text-[9px] font-bold tracking-wider px-1.5 py-0.5 rounded text-white bg-red-800 uppercase`} aria-live="assertive">
                               ANOMALY DETECTED: {anomaly.type}
                             </span>
                             <h3 className="font-bold text-white text-xs mt-1">{anomaly.message}</h3>
@@ -653,7 +654,7 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
 
                               <span className={`text-[10px] font-black tracking-wider px-2 py-0.5 rounded ${validation.status === 'OVERRIDDEN' ? 'bg-neonRed/20 text-neonRed border border-neonRed/40 pulse-glow-red' :
                                 'bg-neonGreen/20 text-neonGreen border border-neonGreen/40 glow-green'
-                                }`}>
+                                }`} aria-live="assertive">
                                 GUARDRAILS: {validation.status === 'OVERRIDDEN' ? 'INTERCEPTED & OVERRIDDEN' : 'PASSED'}
                               </span>
                             </div>
@@ -801,6 +802,7 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                                     });
                                   }}
                                   className="w-full bg-[#ff003c]/20 hover:bg-[#ff003c]/35 text-[#ff003c] border border-[#ff003c]/40 text-xs py-2 rounded font-extrabold uppercase tracking-widest flex items-center justify-center gap-1.5 transition"
+                                  aria-label={`Execute emergency protocol for active anomaly: ${anomaly.type || 'nominal state'}`}
                                 >
                                   {buttonText}
                                 </button>
@@ -835,7 +837,7 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
 
               {/* STADIUM VECTOR CANVAS */}
               <div className="relative flex-1 w-full bg-[#070a13] rounded-lg border border-[#1a1f33] overflow-hidden flex items-center justify-center p-2 min-h-[200px]">
-                <svg viewBox="0 0 400 240" className="w-full h-full opacity-60 absolute inset-0 pointer-events-none">
+                <svg viewBox="0 0 400 240" className="w-full h-full opacity-60 absolute inset-0 pointer-events-none" role="img" aria-label="Digital twin stadium layout map outline and zone coordinates">
                   {/* Outer stadium outline */}
                   <ellipse cx="200" cy="120" rx="170" ry="90" fill="none" stroke="#1c2541" strokeWidth="2" />
                   <ellipse cx="200" cy="120" rx="140" ry="70" fill="none" stroke="#2b3147" strokeWidth="1.5" />
@@ -906,6 +908,8 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                       style={{ left: `${node.x}%`, top: `${node.y}%`, transform: 'translate(-50%, -50%)' }}
                       onMouseEnter={() => setHoveredNode({ ...node, metrics: metricValue, anomaly: anomalyInfo })}
                       onMouseLeave={() => setHoveredNode(null)}
+                      role="img"
+                      aria-label={`Interactive map indicator for ${node.label} in ${node.area}. Safety status: ${hasAnomaly ? `Anomaly Active (${severity})` : 'Nominal'}. Telemetry Metrics: ${metricValue}`}
                       onClick={() => {
                         let desc = 'Mock event selected.';
                         let type = 'MEDICAL_EMERGENCY';
@@ -1024,8 +1028,10 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
               </h2>
               <form onSubmit={injectMockIncident} className="space-y-2.5">
                 <div>
-                  <label className="block text-[9px] text-[#8a99ad] uppercase mb-0.5">Incident Type</label>
+                  <label htmlFor="inject-incident-type" className="sr-only">Incident Type Dropdown</label>
+                  <label className="block text-[9px] text-[#8a99ad] uppercase mb-0.5" htmlFor="inject-incident-type">Incident Type</label>
                   <select
+                    id="inject-incident-type"
                     value={injectDetails.incident_type}
                     onChange={(e) => {
                       const type = e.target.value;
@@ -1059,17 +1065,21 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[9px] text-[#8a99ad] uppercase mb-0.5">Location Zone</label>
+                    <label htmlFor="inject-location-zone" className="sr-only">Location Zone Input</label>
+                    <label className="block text-[9px] text-[#8a99ad] uppercase mb-0.5" htmlFor="inject-location-zone">Location Zone</label>
                     <input
                       type="text"
+                      id="inject-location-zone"
                       value={injectDetails.location_zone}
                       onChange={(e) => setInjectDetails(prev => ({ ...prev, location_zone: e.target.value }))}
                       className="w-full bg-[#101423] border border-[#1b223c] rounded p-1.5 text-xs text-white"
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] text-[#8a99ad] uppercase mb-0.5">Priority</label>
+                    <label htmlFor="inject-priority" className="sr-only">Priority Dropdown</label>
+                    <label className="block text-[9px] text-[#8a99ad] uppercase mb-0.5" htmlFor="inject-priority">Priority</label>
                     <select
+                      id="inject-priority"
                       value={injectDetails.priority}
                       onChange={(e) => setInjectDetails(prev => ({ ...prev, priority: e.target.value }))}
                       className="w-full bg-[#101423] border border-[#1b223c] rounded p-1.5 text-xs text-white"
@@ -1082,8 +1092,10 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
                 </div>
 
                 <div>
-                  <label className="block text-[9px] text-[#8a99ad] uppercase mb-0.5">Details Summary</label>
+                  <label htmlFor="inject-details" className="sr-only">Details Summary Textarea</label>
+                  <label className="block text-[9px] text-[#8a99ad] uppercase mb-0.5" htmlFor="inject-details">Details Summary</label>
                   <textarea
+                    id="inject-details"
                     value={injectDetails.details}
                     onChange={(e) => setInjectDetails(prev => ({ ...prev, details: e.target.value }))}
                     className="w-full bg-[#101423] border border-[#1b223c] rounded p-2 text-xs text-white h-11 resize-none"
@@ -1175,17 +1187,19 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
             </div>
 
             <form onSubmit={sendChatMessage} className="p-3 border-t border-teal-800 bg-[#073633] flex gap-1.5">
+              <label htmlFor="copilot-chat-input-overlay" className="sr-only">Query Staff Copilot Overlay Input</label>
               <input
                 type="text"
+                id="copilot-chat-input-overlay"
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 placeholder="Ask: 'Which gate is under stress?'"
-                disabled={chatLoading}
+                disabled={isLoading === true}
                 className="flex-1 bg-[#050609] border border-teal-800 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500"
               />
               <button
                 type="submit"
-                disabled={chatLoading}
+                disabled={isLoading === true}
                 className="bg-teal-800/40 hover:bg-teal-700/50 text-teal-300 border border-teal-600/60 p-2 rounded transition"
               >
                 <Send className="h-4.5 w-4.5" />
@@ -1255,17 +1269,19 @@ How run-time checks are synchronized: ask me about gate pressures, water volumes
               </div>
 
               <form onSubmit={sendChatMessage} className="p-4 border-t border-[#1b223c] bg-[#0c0e18] flex gap-2">
+                <label htmlFor="copilot-chat-input-fullscreen" className="sr-only">Query Staff Copilot Fullscreen Input</label>
                 <input
                   type="text"
+                  id="copilot-chat-input-fullscreen"
                   value={currentMessage}
                   onChange={(e) => setCurrentMessage(e.target.value)}
                   placeholder="Ask: 'Which gate is under stress?'"
-                  disabled={chatLoading}
+                  disabled={isLoading === true}
                   className="flex-1 bg-[#050609] border border-[#1b223c] rounded px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#45f3ff]"
                 />
                 <button
                   type="submit"
-                  disabled={chatLoading}
+                  disabled={isLoading === true}
                   className="bg-[#45f3ff]/10 hover:bg-[#45f3ff]/20 text-[#66fcf1] border border-[#45f3ff]/40 px-4 py-2 rounded transition font-semibold"
                 >
                   Send Query

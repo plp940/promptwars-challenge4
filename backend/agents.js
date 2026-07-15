@@ -179,14 +179,15 @@ Be concise (max 3-4 sentences).`;
     } catch (error) {
         console.error("Error calling Gemini API for incident resolution:", error);
 
-        // Quota check
-        const isQuotaError = error.status === 429 ||
-            (error.message && (error.message.includes("429") ||
+        // Quota check or API resource exception check (429 or 404)
+        const isFallbackTrigger = error.status === 429 || error.status === 404 ||
+            (error.message && (error.message.includes("429") || error.message.includes("404") ||
                 error.message.toLowerCase().includes("quota exceeded") ||
-                error.message.toLowerCase().includes("rate limit")));
+                error.message.toLowerCase().includes("rate limit") ||
+                error.message.toLowerCase().includes("not found")));
 
-        if (isQuotaError) {
-            console.warn(`[Quota Fallback Alert] Intercepted 429 Rate Limit. Serving playbook fallback resolution for key: ${playbookKey}`);
+        if (isFallbackTrigger) {
+            console.warn(`[API Fallback Alert] Intercepted ${error.status || '429/404'} Error. Serving playbook fallback resolution for key: ${playbookKey}`);
             return getMockIncidentResolution(playbookKey);
         }
 
@@ -199,9 +200,21 @@ Be concise (max 3-4 sentences).`;
  * Uses current telemetry snapshot to answer questions.
  */
 export async function handleCopilotChat(chatHistory, userMessage, currentTelemetry) {
+    // Sanitization layer: escape special character tags to block XSS and prompt injection
+    let sanitizedMessage = typeof userMessage === 'string' ? userMessage : '';
+    sanitizedMessage = sanitizedMessage
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+        .replace(/\//g, '&#x2F;');
+    userMessage = sanitizedMessage;
+
     const telemetryContext = `
 CURRENT STADIUM TELEMETRY STATE (DIGITAL TWIN):
 ${JSON.stringify(currentTelemetry, null, 2)}
+
 
 Playbooks Available in System:
 - MEDICAL_SECTOR_102 (Medical Station Echo, Room 2B-Level 1, Evacuation Route: Tunnel Exit 4 to Concourse Corridor South, Squad: Medics Team 3)

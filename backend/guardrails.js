@@ -14,6 +14,37 @@ try {
   console.error("Failed to read playbooks.json:", error);
 }
 
+// Global cached types and locations for validation efficiency
+const knownTypes = [
+  'WATER_SHORTAGE',
+  'WASHROOM_CONGESTION',
+  'GATE_OVERFLOW',
+  'FOOD_COURT_OVERFLOW',
+  'WEATHER_ALERT',
+  'MEDICAL_EMERGENCY'
+];
+
+const knownLocations = [
+  'SECTOR_310',
+  'SECTOR_102',
+  'SECTOR_205',
+  'WASHROOM_SOUTH',
+  'WASHROOM_EAST',
+  'WASHROOM_WEST',
+  'WASHROOM_NORTH',
+  'GATE_A',
+  'GATE_B',
+  'GATE_C',
+  'GATE_D',
+  'FOOD_COURT_ZONE_A',
+  'FOOD_COURT_ZONE_B',
+  'SECTOR_ALL'
+];
+
+const AT_REGEX = /\s+AT\s+/g;
+const SPACES_UNDERSCORES_REGEX = /[\s_]+/g;
+const ROOM_PATTERN = /Room \d[A-Z]-[Level\s\d]+/gi;
+
 /**
  * Validates the Gemini Agent's recommendation against the deterministic playbook.
  * If details match, it approves. If there is a mismatch or hallucination, it overrides.
@@ -26,7 +57,7 @@ export function verifyIncidentRecommendation(playbookKey, llmOutput) {
   let normalizedKey = (playbookKey || '').trim();
 
   // 1. Simplify Preposition Parsing
-  normalizedKey = normalizedKey.toUpperCase().replace(/\s+AT\s+/g, '_').replace(/[\s_]+/g, '_');
+  normalizedKey = normalizedKey.toUpperCase().replace(AT_REGEX, '_').replace(SPACES_UNDERSCORES_REGEX, '_');
 
   // Remap food court short layouts directly
   if (normalizedKey.includes('FOOD_COURT_ZONE_B') && !normalizedKey.includes('OVERFLOW')) {
@@ -37,32 +68,6 @@ export function verifyIncidentRecommendation(playbookKey, llmOutput) {
 
   // 2. If not a direct match, parse and reconstruct <TYPE>_<LOCATION>
   if (!playbooks[normalizedKey]) {
-    const knownTypes = [
-      'WATER_SHORTAGE',
-      'WASHROOM_CONGESTION',
-      'GATE_OVERFLOW',
-      'FOOD_COURT_OVERFLOW',
-      'WEATHER_ALERT',
-      'MEDICAL_EMERGENCY'
-    ];
-
-    const knownLocations = [
-      'SECTOR_310',
-      'SECTOR_102',
-      'SECTOR_205',
-      'WASHROOM_SOUTH',
-      'WASHROOM_EAST',
-      'WASHROOM_WEST',
-      'WASHROOM_NORTH',
-      'GATE_A',
-      'GATE_B',
-      'GATE_C',
-      'GATE_D',
-      'FOOD_COURT_ZONE_A',
-      'FOOD_COURT_ZONE_B',
-      'SECTOR_ALL'
-    ];
-
     let foundType = knownTypes.find(t => normalizedKey.includes(t));
     if (!foundType) {
       if (normalizedKey.includes('MEDICAL')) foundType = 'MEDICAL_EMERGENCY';
@@ -202,8 +207,7 @@ export function verifyIncidentRecommendation(playbookKey, llmOutput) {
 
   // Also check for aggressive pattern mismatch (e.g. if the LLM invents other rooms or squads)
   // Let's check for any mention of another room (e.g. "Room [0-9][A-Z]") that does not match
-  const roomPattern = /Room \d[A-Z]-[Level\s\d]+/gi;
-  const matches = llmOutput.match(roomPattern);
+  const matches = llmOutput.match(ROOM_PATTERN);
   if (matches) {
     for (const match of matches) {
       if (!match.toLowerCase().includes(room_number.toLowerCase())) {

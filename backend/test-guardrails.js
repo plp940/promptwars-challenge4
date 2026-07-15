@@ -89,7 +89,46 @@ console.log("TEST CASE 10: Preposition simplification for string 'WATER_SHORTAGE
 const result10 = verifyIncidentRecommendation('WATER_SHORTAGE at SECTOR_102', compliantOutput5);
 console.log(`Status: ${result10.status}`);
 console.log(`Changes Made: ${result10.changesMade}`);
-console.log("-----------------------------------------");
+console.log("-----------------------------------------\n");
+
+// Dynamic import to test generateIncidentResolution API error handling paths
+process.env.GEMINI_API_KEY = 'test-mock-key-disable-mock';
+const { GoogleGenerativeAI } = await import('@google/generative-ai');
+const { generateIncidentResolution } = await import('./agents.js');
+
+let simulateErrorStatus = null;
+GoogleGenerativeAI.prototype.getGenerativeModel = function () {
+    return {
+        generateContent: async function () {
+            if (simulateErrorStatus === 429) {
+                const err = new Error("Rate limit exceeded");
+                err.status = 429;
+                throw err;
+            } else if (simulateErrorStatus === 404) {
+                const err = new Error("Model not found");
+                err.status = 404;
+                throw err;
+            }
+            return { response: { text: () => "Nominal response" } };
+        }
+    };
+};
+
+console.log("TEST CASE 11: generateIncidentResolution handling simulated 429 Quota Exceeded exception");
+simulateErrorStatus = 429;
+const result429 = await generateIncidentResolution('MEDICAL_SECTOR_102', { details: "Severe casualty" });
+console.log(`429 Fallback Output:\n${result429}`);
+const pass429 = result429.includes("Medical Station Echo") && result429.includes("Room 2B-Level 1");
+console.log(`Intercept status: ${pass429 ? "SUCCESS (Matched local playbook)" : "FAILED"}`);
+console.log("-----------------------------------------\n");
+
+console.log("TEST CASE 12: generateIncidentResolution handling simulated 404 Model Not Found exception");
+simulateErrorStatus = 404;
+const result404 = await generateIncidentResolution('GATE_A_OVERFLOW', { details: "Egress block" });
+console.log(`404 Fallback Output:\n${result404}`);
+const pass404 = result404.includes("Gate Control Cabin A") && result404.includes("Crowd Control Squad Alpha");
+console.log(`Intercept status: ${pass404 ? "SUCCESS (Matched local playbook)" : "FAILED"}`);
+console.log("-----------------------------------------\n");
 
 if (
     result1.status === 'PASSED' &&
@@ -101,11 +140,13 @@ if (
     result7.status === 'PASSED' &&
     result8.status === 'PASSED' &&
     result9.status === 'PASSED' &&
-    result10.status === 'PASSED'
+    result10.status === 'PASSED' &&
+    pass429 &&
+    pass404
 ) {
-    console.log("\n✅ ALL GUARDRAIL ENFORCEMENT VERIFICATIONS PASSED!");
+    console.log("\n✅ ALL GUARDRAIL & API EXCEPTION ROBUSTNESS TEST CASES PASSED!");
     process.exit(0);
 } else {
-    console.error("\n❌ GUARDRAIL VERIFICATION AUDIT FAILED!");
+    console.error("\n❌ GUARDRAIL & API EXCEPTION ROBUSTNESS TEST CASES FAILED!");
     process.exit(1);
 }
